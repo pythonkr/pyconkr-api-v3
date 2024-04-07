@@ -1,5 +1,9 @@
+# Setup development environment
+setup:
+	poetry install
+
 # Devtools
-hooks-install:
+hooks-install: setup
 	poetry run pre-commit install
 
 hooks-upgrade:

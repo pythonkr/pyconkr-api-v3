@@ -12,24 +12,65 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 
+import environ
+import pymysql
+
+pymysql.install_as_MySQLdb()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env(DEBUG=(bool, False), LOG_LEVEL=(str, "DEBUG"))
+env.read_env(env.str("ENV_PATH", default=".env.local"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-kjtg@&v106jt2wz9tlci@b!3uqrig7eud^3zk53&!me@gw_(q@"  # nosec: B105
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="local_secret_key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS: list[str] = []
+# Loggers
+LOG_LEVEL = env("LOG_LEVEL")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": LOG_LEVEL,
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+        },
+    },
+}
 
+# Zappa Settings
+API_STAGE = env("API_STAGE", default="prod")
+ADDITIONAL_TEXT_MIMETYPES: list[str] = []
+ASYNC_RESPONSE_TABLE = ""
+AWS_BOT_EVENT_MAPPING: dict[str, str] = {}
+AWS_EVENT_MAPPING: dict[str, str] = {}
+BASE_PATH = None
+BINARY_SUPPORT = True
+COGNITO_TRIGGER_MAPPING: dict[str, str] = {}
+CONTEXT_HEADER_MAPPINGS: dict[str, str] = {}
+DJANGO_SETTINGS = "pyconkr.settings"
+DOMAIN = None
+ENVIRONMENT_VARIABLES: dict[str, str] = {}
+EXCEPTION_HANDLER = None
+PROJECT_NAME = "PyConKR-API-V3"
+
+# CORS Settings
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -75,28 +116,23 @@ WSGI_APPLICATION = "pyconkr.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+        "ENGINE": env("DATABASE_ENGINE", default="django.db.backends.sqlite3"),
+        "NAME": env("DATABASE_NAME", default=str(BASE_DIR / "db.sqlite3")),
+        "PORT": env("DATABASE_PORT", default=None),
+        "HOST": env("DATABASE_HOST", default=None),
+        "USER": env("DATABASE_USER", default=None),
+        "PASSWORD": env("DATABASE_PASSWORD", default=None),
+    },
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
@@ -105,7 +141,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "ko-kr"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Seoul"
 
 USE_I18N = True
 
@@ -114,8 +150,20 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
-
 STATIC_URL = "static/"
+
+STORAGE_BACKEND = env("DJANGO_STORAGE_BACKEND", default="storages.backends.s3.S3Storage")
+STORAGE_BUCKET_NAME = f"pyconkr-v3-api-{API_STAGE}"
+STORAGE_OPTIONS = (
+    {"bucket_name": STORAGE_BUCKET_NAME, "file_overwrite": False}
+    if STORAGE_BACKEND == "storages.backends.s3.S3Storage"
+    else {}
+)
+
+STORAGES = {
+    "default": {"BACKEND": STORAGE_BACKEND, "OPTIONS": STORAGE_OPTIONS},
+    "staticfiles": {"BACKEND": STORAGE_BACKEND, "OPTIONS": STORAGE_OPTIONS},
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

@@ -1,24 +1,23 @@
 name: Release
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 on:
   workflow_dispatch:
   push:
     branches:
-        - 'dev'
-        - 'main'
+      - 'main'
 
 jobs:
   BuildAndDeploy:
     runs-on: ubuntu-latest
 
     env:
-      API_STAGE: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
-      BUMP_RULE: ${{ github.ref == 'refs/heads/main' && 'patch' || 'prerelease' }}
-      AWS_ECR_REGISTRY: ${{ github.ref == 'refs/heads/main' && secrets.AWS_ECR_PROD_URL || secrets.AWS_ECR_DEV_URL }}
+      API_STAGE: ${{ github.event_name == 'workflow_dispatch' && 'prod' || 'dev' }}
+      BUMP_RULE: ${{ github.event_name == 'workflow_dispatch' && 'patch' || 'prerelease' }}
+      AWS_ECR_REGISTRY: ${{ github.event_name == 'workflow_dispatch' && secrets.AWS_ECR_PROD_URL || secrets.AWS_ECR_DEV_URL }}
 
     steps:
       # Checkout source codes
@@ -62,26 +61,6 @@ jobs:
           poetry version ${{ env.BUMP_RULE }}
           echo "::set-output name=TAG::$(poetry version -s)"
 
-      # If this is a production release action, then reset dev version to main's new version
-      - name: Update Release tag on dev
-        if: success() && github.ref == 'refs/heads/main'
-        uses: actions/checkout@v4
-        with:
-          path: dev-branch
-          ref: dev
-      - name: Reset dev version to main's
-        if: success() && github.ref == 'refs/heads/main'
-        run: cd ./dev-branch && poetry version ${{ steps.get-new-version-tag.outputs.TAG }} && cd ..
-      - uses: EndBug/add-and-commit@v9
-        if: success() && github.ref == 'refs/heads/main'
-        with:
-          message: "main 브랜치의 ${{ steps.get-new-version-tag.outputs.TAG }} 버전 Release에 따른 dev 버전 갱신 [skip ci]"
-          add: "pyproject.toml"
-          cwd: ./dev-branch
-          pathspec_error_handling: exitImmediately
-      - if: success() && github.ref == 'refs/heads/main'
-        run: rm -rf dev-branch
-
       # Build and Push Docker image to ECR
       - name: Build and Push Docker image to ECR
         uses: docker/build-push-action@v5
@@ -102,7 +81,7 @@ jobs:
       - uses: EndBug/add-and-commit@v9
         with:
           message: "${{ steps.get-new-version-tag.outputs.TAG }} 버전 Release"
-          tag: ${{ steps.get-new-version-tag.outputs.TAG }}
+          tag: ${{ github.event_name == 'workflow_dispatch' && steps.get-new-version-tag.outputs.TAG || '' }}
           add: "pyproject.toml"
           pathspec_error_handling: exitImmediately
 

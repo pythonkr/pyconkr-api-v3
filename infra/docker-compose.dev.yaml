@@ -1,0 +1,28 @@
+version: '3.9'
+
+name: pyconkr-v3-local
+
+volumes:
+  mysql-data:
+    driver: local
+
+services:
+  pyconkr-v3-mysql:
+    image: mysql:8.0.36-debian
+    platform: linux/amd64
+    container_name: pyconkr-v3-mysql
+    command: mysqld
+
+    restart: unless-stopped
+    volumes:
+      - mysql-data:/var/lib/mysql:rw
+      - mysql-data:/docker-entrypoint-initdb.d:ro
+      - mysql-data:/etc/mysql/mysql.conf.d:ro
+
+    environment:
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+    ports:
+    - ${DATABASE_PORT}:3306

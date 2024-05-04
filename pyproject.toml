@@ -2,17 +2,31 @@
 name = "pyconkr-api-v3"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = ["PyConKR <pyconkr@pycon.kr>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+cryptography = "^42.0.5"
 Django = "^5.0.4"
+django-cors-headers = "^4.3.1"
+django-environ = "^0.11.2"
+django-mysql = "^4.13.0"
 django-ninja = "^1.1.0"
+django-storages = {extras = ["s3"], version = "^1.14.2"}
 pydantic = "^2.6.4"
+pymysql = "^1.1.0"
+requests = "^2.31.0"
+zappa = "^0.59.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"
+
+[tool.poetry.group.deployment.dependencies]
+django = "^5.0.4"
+django-storages = {extras = ["s3"], version = "^1.14.2"}
+django-environ = "^0.11.2"
+zappa = "^0.59.0"
 
 [build-system]
 requires = ["poetry-core"]

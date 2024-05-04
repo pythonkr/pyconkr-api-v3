@@ -1,0 +1,37 @@
+name: Check lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'main'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Run lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source codes
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install 'pre-commit'
+
+      - name: cache pre-commit repo
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: ${{ runner.os }}-pre-commit-
+
+      - name: Run pre-commit
+        id: run-pre-commit
+        run: pre-commit run --all-files

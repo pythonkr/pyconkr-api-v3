@@ -153,7 +153,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 STORAGE_BACKEND = env("DJANGO_STORAGE_BACKEND", default="storages.backends.s3.S3Storage")
-STORAGE_BUCKET_NAME = f"pyconkr-v3-api-{API_STAGE}"
+STORAGE_BUCKET_NAME = f"pyconkr-api-v3-{API_STAGE}"
 STORAGE_OPTIONS = (
     {"bucket_name": STORAGE_BUCKET_NAME, "file_overwrite": False}
     if STORAGE_BACKEND == "storages.backends.s3.S3Storage"
